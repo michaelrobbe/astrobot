@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>mapgen</title>
+	<style>
+		body {
+			margin: 0;
+			padding: 0;
+		    image-rendering: optimizeSpeed;             /* STOP SMOOTHING, GIVE ME SPEED  */
+		    image-rendering: -moz-crisp-edges;          /* Firefox                        */
+		    image-rendering: -o-crisp-edges;            /* Opera                          */
+		    image-rendering: -webkit-optimize-contrast; /* Chrome (and eventually Safari) */
+		    image-rendering: pixelated; /* Chrome */
+		    image-rendering: optimize-contrast;         /* CSS3 Proposed                  */
+		    -ms-interpolation-mode: nearest-neighbor;   /* IE8+                           */
+		}
+		.details {
+
+		}
+		#grid {
+			width: 100%;
+			display: flex;
+			flex-direction: row;
+			flex-flow: row wrap;
+		}
+		#grid div {
+		    width: 82px;
+		    border-width: 4px;
+		    border-style: solid;
+		    text-align: center;
+		    padding: 41px 0;
+		    background-repeat: no-repeat;
+		    background-size: cover;
+		}
+		.match {
+			background-color: black;
+			color: white;
+		}
+		.x {
+			background-color: green;
+			color: white;
+		}
+		.y {
+			background-color: blue;
+			color: white;
+		}
+		.grass {
+			background-color: darkgreen;
+			border-color: darkgreen;
+		}
+		.dirt {
+			background-color: saddlebrown;
+			border-color: saddlebrown;
+		}
+		.stone {
+			background-color: gray;
+			border-color: gray;
+		}
+		.water {
+			background-color: cyan;
+			border-color: cyan;
+		}
+		#grid div[data-select='true'] {
+			border-color: blue;
+		}
+		.city {
+			background-image: url('icons/coins_2.jpg');
+		}
+		.tribe {
+			background-image: url('icons/key_2.jpg');
+		}
+		.valley {
+			background-image: url('icons/monster_head_3.jpg');
+		}
+		.tribe {
+			background-image: url('icons/helmet_10.jpg');
+		}
+		.cattle {
+			background-image: url('icons/helmet_2.jpg');
+		}
+		.horses {
+			background-image: url('icons/helmet_4.jpg');
+		}
+		.mountain {
+			background-image: url('icons/monster_head_6.jpg');
+		}
+		.cave {
+			background-image: url('icons/spelbook_1.jpg');
+		}
+		.kraken {
+			background-image: url('icons/magic_gem_6.jpg');
+		}	
+
+	</style>
+</head>
+<body>
+	<div id="details">
+		<h1>Type:</h1>
+		<h2>Quality:</h2>
+		<h2>Feature:</h2>
+	</div>
+	<div id="grid">
+	</div>
+</body>
+<script>
+document.onreadystatechange = function() {
+	if (document.readyState === 'complete') {
+		ready();
+	}
+}
+
+var n = 0;
+var map = {};
+Math.seed = 1;
+Math.seededRandom = function(max, min) {
+    max = max || 1;
+    min = min || 0;
+ 
+    Math.seed = (Math.seed * 9301 + 49297) % 233280;
+    var rnd = Math.seed / 233280;
+ 
+    return min + rnd * (max - min);
+}
+
+function ready() {
+	var width = window.innerWidth;
+	var height = window.innerHeight;
+	grid(width, height, 90);
+}
+
+function grid(width, height, unit) {
+	console.log(width, height);
+	var x = (Math.floor(width/unit));
+	var y = (Math.floor(height/unit));
+	console.log(x, y);
+	for (var j = 0; j < y; j++) {
+		for (var i = 0; i < x; i++) {
+			createSquare(i, j);
+		}
+	}
+}
+
+function rand() {
+	return Math.floor(Math.seededRandom(100, 0));
+}
+
+function randType() {
+	var type = {
+		20: 'grass',
+		40: 'dirt',
+		80: 'stone',
+	};
+	var min = 0;
+	var max = 100;
+	var n = rand();
+
+	for (prop in type) {
+		if (n <= prop) {
+			return type[prop];
+		}
+	}
+	return 'water';
+}
+
+function randFeature(land, n) {
+	var type = {
+		'grass': {
+			5: 'city',
+			15: 'tribe',
+			30: 'valley',
+		},
+		'dirt': {
+			10: 'tribe',
+			30: 'cattle',
+			35: 'horses',
+		},
+		'stone': {
+			15: 'mountain',
+			25: 'cave',
+		},
+		'water': {
+			3: 'kraken'
+		}
+	};
+	var min = 0;
+	var max = 100;
+
+	for (prop in type[land]) {
+		if (n <= prop) {
+			return type[land][prop];
+		}
+	}
+	return '';
+}
+
+function squareQuality(x, y, type) {
+	if (map[x] == undefined) {
+		map[x] = {};
+	}
+	if (map[x][y] == undefined) {
+		map[x][y] = {};
+	}
+	map[x][y].name = type;
+	var int = rand()
+	map[x][y].quality = int;
+	map[x][y].feature = randFeature(type, int);
+	return map[x][y].feature;
+}
+
+function createSquare(x, y) {
+	var type = randType();
+	var feature = squareQuality(x, y, type);
+	var div = document.createElement('div');
+	div.classList.add(type);
+	if (feature !== '') {
+		div.classList.add(feature);
+	}
+	div.dataset.x = x;
+	div.dataset.y = y;
+	div.dataset.select = false;
+	// var text = document.createTextNode('');
+	// div.appendChild(text);
+	var griddiv = document.getElementById('grid');
+	griddiv.appendChild(div);
+}
+
+document.body.addEventListener('click', function(e) {
+	var selected = document.querySelector('div[data-select=true]');
+	if (selected !== null) {
+		selected.dataset.select = false;
+	}
+	var cell = e.target.dataset;
+	cell.select = true;
+	var mapcell = map[cell.x][cell.y];
+
+	var details = document.getElementById('details');
+	details.children[0].innerHTML = 'Type: ' + mapcell.name;
+	details.children[1].innerHTML = 'Quality: ' + mapcell.quality;
+	details.children[2].innerHTML = 'Feature: ' + mapcell.feature;
+
+});
+
+</script>
+</html>
